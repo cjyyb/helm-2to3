@@ -24,7 +24,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 
-	common "github.com/helm/helm-2to3/pkg/common"
+	common "github.com/cjyyb/helm-2to3/pkg/common"
 )
 
 var (

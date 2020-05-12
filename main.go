@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/helm/helm-2to3/cmd"
+	"github.com/cjyyb/helm-2to3/cmd"
 )
 
 func main() {

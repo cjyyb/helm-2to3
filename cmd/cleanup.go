@@ -25,9 +25,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/helm/helm-2to3/pkg/common"
-	utils "github.com/helm/helm-2to3/pkg/utils"
-	v2 "github.com/helm/helm-2to3/pkg/v2"
+	"github.com/cjyyb/helm-2to3/pkg/common"
+	utils "github.com/cjyyb/helm-2to3/pkg/utils"
+	v2 "github.com/cjyyb/helm-2to3/pkg/v2"
 )
 
 var (

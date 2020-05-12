@@ -18,16 +18,19 @@ package v2
 
 import (
 	"fmt"
+	"context"
 	"log"
 	"sort"
 
-	utils "github.com/maorfr/helm-plugin-utils/pkg"
+	utils "github.com/cjyyb/helm-plugin-utils/pkg"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 
-	common "github.com/helm/helm-2to3/pkg/common"
+	common "github.com/cjyyb/helm-2to3/pkg/common"
 )
+
+var ctx = context.Background()
 
 type RetrieveOptions struct {
 	ReleaseName      string
@@ -138,7 +141,7 @@ func getReleases(retOpts RetrieveOptions, kubeConfig common.KubeConfig) ([]*rls.
 	var releases []*rls.Release
 	switch storage {
 	case "secrets":
-		secrets, err := clientSet.CoreV1().Secrets(retOpts.TillerNamespace).List(metav1.ListOptions{
+		secrets, err := clientSet.CoreV1().Secrets(retOpts.TillerNamespace).List(ctx, metav1.ListOptions{
 			LabelSelector: retOpts.TillerLabel,
 		})
 		if err != nil {
@@ -152,7 +155,7 @@ func getReleases(retOpts RetrieveOptions, kubeConfig common.KubeConfig) ([]*rls.
 			releases = append(releases, release)
 		}
 	case "configmaps":
-		configMaps, err := clientSet.CoreV1().ConfigMaps(retOpts.TillerNamespace).List(metav1.ListOptions{
+		configMaps, err := clientSet.CoreV1().ConfigMaps(retOpts.TillerNamespace).List(ctx, metav1.ListOptions{
 			LabelSelector: retOpts.TillerLabel,
 		})
 		if err != nil {
@@ -198,9 +201,9 @@ func deleteRelease(retOpts RetrieveOptions, releaseVersionName string, kubeConfi
 	clientSet := utils.GetClientSetWithKubeConfig(kubeConfig.File, kubeConfig.Context)
 	switch storage {
 	case "secrets":
-		return clientSet.CoreV1().Secrets(retOpts.TillerNamespace).Delete(releaseVersionName, &metav1.DeleteOptions{})
+		return clientSet.CoreV1().Secrets(retOpts.TillerNamespace).Delete(ctx, releaseVersionName, metav1.DeleteOptions{})
 	case "configmaps":
-		return clientSet.CoreV1().ConfigMaps(retOpts.TillerNamespace).Delete(releaseVersionName, &metav1.DeleteOptions{})
+		return clientSet.CoreV1().ConfigMaps(retOpts.TillerNamespace).Delete(ctx, releaseVersionName, metav1.DeleteOptions{})
 	}
 	return nil
 }

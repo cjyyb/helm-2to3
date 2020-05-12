@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	utils "github.com/maorfr/helm-plugin-utils/pkg"
+	utils "github.com/cjyyb/helm-plugin-utils/pkg"
 	"github.com/mitchellh/go-homedir"
 )
 

@@ -33,7 +33,7 @@ import (
 	v2chart "k8s.io/helm/pkg/proto/hapi/chart"
 	v2rls "k8s.io/helm/pkg/proto/hapi/release"
 
-	common "github.com/helm/helm-2to3/pkg/common"
+	common "github.com/cjyyb/helm-2to3/pkg/common"
 )
 
 // CreateRelease create a v3 release object from v3 release object

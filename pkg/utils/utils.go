@@ -27,8 +27,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	v2 "github.com/helm/helm-2to3/pkg/v2"
-	v3 "github.com/helm/helm-2to3/pkg/v3"
+	v2 "github.com/cjyyb/helm-2to3/pkg/v2"
+	v3 "github.com/cjyyb/helm-2to3/pkg/v3"
 )
 
 // Copyv2HomeTov3 copies the v2 home directory to the v3 home directory .
