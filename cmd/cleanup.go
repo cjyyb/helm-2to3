@@ -23,11 +23,11 @@ import (
 	"log"
 	"strings"
 
-	"github.com/spf13/cobra"
-
 	"github.com/cjyyb/helm-2to3/pkg/common"
 	utils "github.com/cjyyb/helm-2to3/pkg/utils"
 	v2 "github.com/cjyyb/helm-2to3/pkg/v2"
+	"github.com/spf13/cobra"
+	"helm.sh/helm/v3/pkg/action"
 )
 
 var (
@@ -49,7 +49,7 @@ type CleanupOptions struct {
 	TillerOutCluster bool
 }
 
-func newCleanupCmd(out io.Writer) *cobra.Command {
+func newCleanupCmd(actionConfig *action.Configuration, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cleanup",
 		Short: "cleanup Helm v2 configuration, release data and Tiller deployment",
@@ -60,8 +60,6 @@ func newCleanupCmd(out io.Writer) *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	settings.AddFlags(flags)
-
 	flags.BoolVar(&configCleanup, "config-cleanup", false, "if set, configuration cleanup performed")
 	flags.StringVar(&releaseName, "name", "", "the release name. When it is specified, the named release and its versions will be removed only. Should not be used with other cleanup operations")
 	flags.BoolVar(&releaseCleanup, "release-cleanup", false, "if set, release data cleanup performed")
@@ -165,10 +163,10 @@ func Cleanup(cleanupOptions CleanupOptions, kubeConfig common.KubeConfig) error 
 			StorageType:      cleanupOptions.StorageType,
 		}
 		if cleanupOptions.ReleaseName == "" {
-			err = v2.DeleteAllReleaseVersions(retrieveOptions, kubeConfig, cleanupOptions.DryRun)
+			err = v2.DeleteAllReleaseVersions(retrieveOptions, settings.EnvSettings, cleanupOptions.DryRun)
 		} else {
 			// Get the releases versions as its the versions that are deleted
-			v2Releases, err := v2.GetReleaseVersions(retrieveOptions, kubeConfig)
+			v2Releases, err := v2.GetReleaseVersions(retrieveOptions, settings.EnvSettings)
 			if err != nil {
 				return err
 			}
@@ -182,7 +180,7 @@ func Cleanup(cleanupOptions CleanupOptions, kubeConfig common.KubeConfig) error 
 				DryRun:   cleanupOptions.DryRun,
 				Versions: versions,
 			}
-			err = v2.DeleteReleaseVersions(retrieveOptions, deleteOptions, kubeConfig)
+			err = v2.DeleteReleaseVersions(retrieveOptions, deleteOptions, settings.EnvSettings)
 		}
 		if err != nil {
 			return err

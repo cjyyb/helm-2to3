@@ -21,12 +21,11 @@ import (
 	"io"
 	"log"
 
-	"github.com/spf13/cobra"
-	v2rel "k8s.io/helm/pkg/proto/hapi/release"
-
-	common "github.com/cjyyb/helm-2to3/pkg/common"
 	v2 "github.com/cjyyb/helm-2to3/pkg/v2"
 	v3 "github.com/cjyyb/helm-2to3/pkg/v3"
+	"github.com/spf13/cobra"
+	"helm.sh/helm/v3/pkg/action"
+	v2rel "k8s.io/helm/pkg/proto/hapi/release"
 )
 
 var (
@@ -45,7 +44,7 @@ type ConvertOptions struct {
 	TillerOutCluster   bool
 }
 
-func newConvertCmd(out io.Writer) *cobra.Command {
+func newConvertCmd(actionConfig *action.Configuration, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "convert [flags] RELEASE",
 		Short: "migrate Helm v2 release in-place to Helm v3",
@@ -55,13 +54,12 @@ func newConvertCmd(out io.Writer) *cobra.Command {
 			}
 			return nil
 		},
-
-		RunE: runConvert,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runConvert(actionConfig, cmd, args)
+		},
 	}
 
 	flags := cmd.Flags()
-	settings.AddFlags(flags)
-
 	flags.BoolVar(&deletev2Releases, "delete-v2-releases", false, "v2 release versions are deleted after migration. By default, the v2 release versions are retained")
 	flags.IntVar(&maxReleaseVersions, "release-versions-max", 10, "limit the maximum number of versions converted per release. Use 0 for no limit")
 
@@ -69,7 +67,7 @@ func newConvertCmd(out io.Writer) *cobra.Command {
 
 }
 
-func runConvert(cmd *cobra.Command, args []string) error {
+func runConvert(actionConfig *action.Configuration, cmd *cobra.Command, args []string) error {
 	releaseName := args[0]
 	if settings.ReleaseStorage != "configmaps" && settings.ReleaseStorage != "secrets" {
 		return errors.New("release-storage flag needs to be 'configmaps' or 'secrets'")
@@ -84,19 +82,14 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		TillerNamespace:    settings.TillerNamespace,
 		TillerOutCluster:   settings.TillerOutCluster,
 	}
-	kubeConfig := common.KubeConfig{
-		Context: settings.KubeContext,
-		File:    settings.KubeConfigFile,
-	}
-
-	return Convert(convertOptions, kubeConfig)
+	return Convert(convertOptions, actionConfig)
 }
 
 // Convert converts Helm 2 release into Helm 3 release. It maps the Helm v2 release versions
 // of the release into Helm v3 equivalent and stores the release versions. The underlying Kubernetes resources
 // are untouched. Note: The namespaces of each release version need to exist in the Kubernetes  cluster.
 // The Helm 2 release is retained by default, unless the '--delete-v2-releases' flag is set.
-func Convert(convertOptions ConvertOptions, kubeConfig common.KubeConfig) error {
+func Convert(convertOptions ConvertOptions, actionConfig *action.Configuration) error {
 	if convertOptions.DryRun {
 		log.Println("NOTE: This is in dry-run mode, the following actions will not be executed.")
 		log.Println("Run without --dry-run to take the actions described below:")
@@ -114,7 +107,7 @@ func Convert(convertOptions ConvertOptions, kubeConfig common.KubeConfig) error 
 		TillerOutCluster: convertOptions.TillerOutCluster,
 		StorageType:      convertOptions.StorageType,
 	}
-	v2Releases, err := v2.GetReleaseVersions(retrieveOptions, kubeConfig)
+	v2Releases, err := v2.GetReleaseVersions(retrieveOptions, settings.EnvSettings)
 	if err != nil {
 		return err
 	}
@@ -140,7 +133,7 @@ func Convert(convertOptions ConvertOptions, kubeConfig common.KubeConfig) error 
 		relVerName := v2.GetReleaseVersionName(convertOptions.ReleaseName, v2Release.Version)
 		log.Printf("[Helm 3] ReleaseVersion \"%s\" will be created.\n", relVerName)
 		if !convertOptions.DryRun {
-			if err := createV3ReleaseVersion(v2Release, kubeConfig); err != nil {
+			if err := createV3ReleaseVersion(v2Release, actionConfig); err != nil {
 				return err
 			}
 			log.Printf("[Helm 3] ReleaseVersion \"%s\" created.\n", relVerName)
@@ -157,7 +150,7 @@ func Convert(convertOptions ConvertOptions, kubeConfig common.KubeConfig) error 
 			DryRun:   convertOptions.DryRun,
 			Versions: versions,
 		}
-		if err := v2.DeleteReleaseVersions(retrieveOptions, deleteOptions, kubeConfig); err != nil {
+		if err := v2.DeleteReleaseVersions(retrieveOptions, deleteOptions, settings.EnvSettings); err != nil {
 			return err
 		}
 		if !convertOptions.DryRun {
@@ -176,10 +169,10 @@ func Convert(convertOptions ConvertOptions, kubeConfig common.KubeConfig) error 
 	return nil
 }
 
-func createV3ReleaseVersion(v2Release *v2rel.Release, kubeConfig common.KubeConfig) error {
+func createV3ReleaseVersion(v2Release *v2rel.Release, actionConfig *action.Configuration) error {
 	v3Release, err := v3.CreateRelease(v2Release)
 	if err != nil {
 		return err
 	}
-	return v3.StoreRelease(v3Release, kubeConfig)
+	return actionConfig.Releases.Create(v3Release)
 }

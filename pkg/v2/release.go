@@ -24,10 +24,9 @@ import (
 
 	utils "github.com/cjyyb/helm-plugin-utils/pkg"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"helm.sh/helm/v3/pkg/cli"
 
 	rls "k8s.io/helm/pkg/proto/hapi/release"
-
-	common "github.com/cjyyb/helm-2to3/pkg/common"
 )
 
 var ctx = context.Background()
@@ -54,7 +53,7 @@ func (releases ByReleaseVersion) Swap(i, j int)      { releases[i], releases[j] 
 
 // GetReleaseVersions returns all release versions from Helm v2 storage for a specified release..
 // It is based on Tiller namespace and labels like owner of storage.
-func GetReleaseVersions(retOpts RetrieveOptions, kubeConfig common.KubeConfig) ([]*rls.Release, error) {
+func GetReleaseVersions(retOpts RetrieveOptions, kubeConfig *cli.EnvSettings) ([]*rls.Release, error) {
 	releases, err := getReleases(retOpts, kubeConfig)
 	if err != nil {
 		return nil, err
@@ -69,7 +68,7 @@ func GetReleaseVersions(retOpts RetrieveOptions, kubeConfig common.KubeConfig) (
 
 // DeleteReleaseVersions deletes all release data from Helm v2 storage for a specified release.
 // It is based on Tiller namespace and labels like owner of storage.
-func DeleteReleaseVersions(retOpts RetrieveOptions, delOpts DeleteOptions, kubeConfig common.KubeConfig) error {
+func DeleteReleaseVersions(retOpts RetrieveOptions, delOpts DeleteOptions, kubeConfig *cli.EnvSettings) error {
 	for _, ver := range delOpts.Versions {
 		relVerName := fmt.Sprintf("%s.v%d", retOpts.ReleaseName, ver)
 		log.Printf("[Helm 2] ReleaseVersion \"%s\" will be deleted.\n", relVerName)
@@ -86,7 +85,7 @@ func DeleteReleaseVersions(retOpts RetrieveOptions, delOpts DeleteOptions, kubeC
 
 // DeleteReleaseVersions deletes all release data from Helm v2 storage.
 // It is based on Tiller namespace and labels like owner of storage.
-func DeleteAllReleaseVersions(retOpts RetrieveOptions, kubeConfig common.KubeConfig, dryRun bool) error {
+func DeleteAllReleaseVersions(retOpts RetrieveOptions, kubeConfig *cli.EnvSettings, dryRun bool) error {
 	if retOpts.TillerNamespace == "" {
 		retOpts.TillerNamespace = "kube-system"
 	}
@@ -123,7 +122,7 @@ func DeleteAllReleaseVersions(retOpts RetrieveOptions, kubeConfig common.KubeCon
 	return nil
 }
 
-func getReleases(retOpts RetrieveOptions, kubeConfig common.KubeConfig) ([]*rls.Release, error) {
+func getReleases(retOpts RetrieveOptions, kubeConfig *cli.EnvSettings) ([]*rls.Release, error) {
 	if retOpts.TillerNamespace == "" {
 		retOpts.TillerNamespace = "kube-system"
 	}
@@ -137,7 +136,10 @@ func getReleases(retOpts RetrieveOptions, kubeConfig common.KubeConfig) ([]*rls.
 		retOpts.StorageType = "configmaps"
 	}
 	storage := getStorageType(retOpts, kubeConfig)
-	clientSet := utils.GetClientSetWithKubeConfig(kubeConfig.File, kubeConfig.Context)
+	clientSet, err := utils.GetClientSetWithConfig(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
 	var releases []*rls.Release
 	switch storage {
 	case "secrets":
@@ -159,6 +161,7 @@ func getReleases(retOpts RetrieveOptions, kubeConfig common.KubeConfig) ([]*rls.
 			LabelSelector: retOpts.TillerLabel,
 		})
 		if err != nil {
+			fmt.Println("jlskjflksdj")
 			return nil, err
 		}
 		for _, item := range configMaps.Items {
@@ -175,10 +178,10 @@ func getReleases(retOpts RetrieveOptions, kubeConfig common.KubeConfig) ([]*rls.
 	return releases, nil
 }
 
-func getStorageType(retOpts RetrieveOptions, kubeConfig common.KubeConfig) string {
+func getStorageType(retOpts RetrieveOptions, config *cli.EnvSettings) string {
 	var storage string
 	if !retOpts.TillerOutCluster {
-		storage = utils.GetTillerStorageWithKubeConfig(retOpts.TillerNamespace, kubeConfig.File, kubeConfig.Context)
+		storage = utils.GetTillerStorageWithKubeConfig(retOpts.TillerNamespace, config)
 	} else {
 		storage = retOpts.StorageType
 	}
@@ -190,7 +193,7 @@ func getRelease(itemReleaseData string) *rls.Release {
 	return data
 }
 
-func deleteRelease(retOpts RetrieveOptions, releaseVersionName string, kubeConfig common.KubeConfig) error {
+func deleteRelease(retOpts RetrieveOptions, releaseVersionName string, kubeConfig *cli.EnvSettings) error {
 	if retOpts.TillerNamespace == "" {
 		retOpts.TillerNamespace = "kube-system"
 	}
@@ -198,7 +201,10 @@ func deleteRelease(retOpts RetrieveOptions, releaseVersionName string, kubeConfi
 		retOpts.StorageType = "configmaps"
 	}
 	storage := getStorageType(retOpts, kubeConfig)
-	clientSet := utils.GetClientSetWithKubeConfig(kubeConfig.File, kubeConfig.Context)
+	clientSet, err := utils.GetClientSetWithConfig(kubeConfig)
+	if err != nil {
+		return err
+	}
 	switch storage {
 	case "secrets":
 		return clientSet.CoreV1().Secrets(retOpts.TillerNamespace).Delete(ctx, releaseVersionName, metav1.DeleteOptions{})

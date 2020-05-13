@@ -23,23 +23,14 @@ import (
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
-
-	common "github.com/cjyyb/helm-2to3/pkg/common"
-)
-
-var (
-	settings = cli.New()
 )
 
 // GetActionConfig returns action configuration based on Helm env
-func GetActionConfig(namespace string, kubeConfig common.KubeConfig) (*action.Configuration, error) {
+func GetActionConfig(namespace string, kubeConfig *cli.EnvSettings) (*action.Configuration, error) {
 	actionConfig := new(action.Configuration)
 
 	// Add kube config settings passed by user
-	settings.KubeConfig = kubeConfig.File
-	settings.KubeContext = kubeConfig.Context
-
-	err := actionConfig.Init(settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), debug)
+	err := actionConfig.Init(kubeConfig.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), debug(kubeConfig))
 	if err != nil {
 		return nil, err
 	}
@@ -47,9 +38,11 @@ func GetActionConfig(namespace string, kubeConfig common.KubeConfig) (*action.Co
 	return actionConfig, err
 }
 
-func debug(format string, v ...interface{}) {
-	if settings.Debug {
-		format = fmt.Sprintf("[debug] %s\n", format)
-		log.Output(2, fmt.Sprintf(format, v...))
+func debug(setting *cli.EnvSettings) func(format string, v ...interface{}) {
+	return func(format string, v ...interface{}) {
+		if setting.Debug {
+			format = fmt.Sprintf("[debug] %s\n", format)
+			log.Output(2, fmt.Sprintf(format, v...))
+		}
 	}
 }

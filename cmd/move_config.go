@@ -21,12 +21,12 @@ import (
 	"io"
 	"log"
 
-	"github.com/spf13/cobra"
-
 	utils "github.com/cjyyb/helm-2to3/pkg/utils"
+	"github.com/spf13/cobra"
+	"helm.sh/helm/v3/pkg/action"
 )
 
-func newMoveConfigCmd(out io.Writer) *cobra.Command {
+func newMoveConfigCmd(actionConfig *action.Configuration, out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "move config",
 		Short: "migrate Helm v2 configuration in-place to Helm v3",
@@ -38,10 +38,6 @@ func newMoveConfigCmd(out io.Writer) *cobra.Command {
 		},
 		RunE: runMove,
 	}
-
-	flags := cmd.Flags()
-	settings.AddBaseFlags(flags)
-
 	return cmd
 }
 

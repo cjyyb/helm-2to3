@@ -16,7 +16,10 @@ limitations under the License.
 
 package cmd
 
-import "github.com/spf13/pflag"
+import (
+	"github.com/spf13/pflag"
+	"helm.sh/helm/v3/pkg/cli"
+)
 
 type EnvSettings struct {
 	DryRun           bool
@@ -26,10 +29,13 @@ type EnvSettings struct {
 	ReleaseStorage   string
 	TillerNamespace  string
 	TillerOutCluster bool
+	*cli.EnvSettings
 }
 
 func New() *EnvSettings {
-	envSettings := EnvSettings{}
+	envSettings := EnvSettings{
+		EnvSettings: cli.New(),
+	}
 	return &envSettings
 }
 
@@ -41,11 +47,9 @@ func (s *EnvSettings) AddBaseFlags(fs *pflag.FlagSet) {
 // AddFlags binds flags to the given flagset.
 func (s *EnvSettings) AddFlags(fs *pflag.FlagSet) {
 	s.AddBaseFlags(fs)
-	fs.StringVar(&s.KubeConfigFile, "kubeconfig", "", "path to the kubeconfig file")
-	fs.StringVar(&s.KubeContext, "kube-context", s.KubeContext, "name of the kubeconfig context to use")
 	fs.StringVarP(&s.TillerNamespace, "tiller-ns", "t", "kube-system", "namespace of Tiller")
 	fs.StringVarP(&s.Label, "label", "l", "OWNER=TILLER", "label to select Tiller resources by")
 	fs.BoolVar(&s.TillerOutCluster, "tiller-out-cluster", false, "when  Tiller is not running in the cluster e.g. Tillerless")
 	fs.StringVarP(&s.ReleaseStorage, "release-storage", "s", "secrets", "v2 release storage type/object. It can be 'secrets' or 'configmaps'. This is only used with the 'tiller-out-cluster' flag")
-
+	s.EnvSettings.AddFlags(fs)
 }

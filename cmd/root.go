@@ -22,13 +22,18 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"helm.sh/helm/v3/pkg/action"
 )
 
 var (
-	settings *EnvSettings
+	settings = New()
 )
 
-func NewRootCmd(out io.Writer, args []string) *cobra.Command {
+func GetSettings() *EnvSettings {
+	return settings
+}
+
+func NewRootCmd(actionConfig *action.Configuration, out io.Writer, args []string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "2to3",
 		Short:        "Migrate and Cleanup Helm v2 configuration and releases in-place to Helm v3",
@@ -43,8 +48,8 @@ func NewRootCmd(out io.Writer, args []string) *cobra.Command {
 	}
 
 	flags := cmd.PersistentFlags()
+	settings.AddFlags(flags)
 	flags.Parse(args)
-	settings = new(EnvSettings)
 
 	// When run with the Helm plugin framework, Helm plugins are not passed the
 	// plugin flags that correspond to Helm global flags e.g. helm 2to3 convert --kube-context ...
@@ -61,9 +66,9 @@ func NewRootCmd(out io.Writer, args []string) *cobra.Command {
 	// need to be explicitely handled here.
 
 	cmd.AddCommand(
-		newCleanupCmd(out),
-		newConvertCmd(out),
-		newMoveConfigCmd(out),
+		newCleanupCmd(actionConfig, out),
+		newConvertCmd(actionConfig, out),
+		newMoveConfigCmd(actionConfig, out),
 	)
 
 	return cmd
