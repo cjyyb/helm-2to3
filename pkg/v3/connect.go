@@ -18,11 +18,9 @@ package v3
 
 import (
 	"fmt"
-	"log"
-	"os"
-
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
+	"log"
 )
 
 // GetActionConfig returns action configuration based on Helm env
@@ -30,7 +28,7 @@ func GetActionConfig(namespace string, kubeConfig *cli.EnvSettings) (*action.Con
 	actionConfig := new(action.Configuration)
 
 	// Add kube config settings passed by user
-	err := actionConfig.Init(kubeConfig.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), debug(kubeConfig))
+	err := actionConfig.Init(kubeConfig.RESTClientGetter(), namespace, "secrets", debug(kubeConfig))
 	if err != nil {
 		return nil, err
 	}

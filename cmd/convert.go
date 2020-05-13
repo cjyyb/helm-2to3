@@ -133,7 +133,7 @@ func Convert(convertOptions ConvertOptions, actionConfig *action.Configuration) 
 		relVerName := v2.GetReleaseVersionName(convertOptions.ReleaseName, v2Release.Version)
 		log.Printf("[Helm 3] ReleaseVersion \"%s\" will be created.\n", relVerName)
 		if !convertOptions.DryRun {
-			if err := createV3ReleaseVersion(v2Release, actionConfig); err != nil {
+			if err := createV3ReleaseVersion(v2Release); err != nil {
 				return err
 			}
 			log.Printf("[Helm 3] ReleaseVersion \"%s\" created.\n", relVerName)
@@ -169,10 +169,10 @@ func Convert(convertOptions ConvertOptions, actionConfig *action.Configuration) 
 	return nil
 }
 
-func createV3ReleaseVersion(v2Release *v2rel.Release, actionConfig *action.Configuration) error {
+func createV3ReleaseVersion(v2Release *v2rel.Release) error {
 	v3Release, err := v3.CreateRelease(v2Release)
 	if err != nil {
 		return err
 	}
-	return actionConfig.Releases.Create(v3Release)
+	return v3.StoreRelease(v3Release, settings.EnvSettings)
 }

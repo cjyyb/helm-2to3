@@ -1,3 +1,27 @@
+
+# Skip TLS certificate verify
+
+helm.sh/helm/v3/pkg/cli/environment.go
+```go
+//RESTClientGetter gets the kubeconfig from EnvSettings
+func (s *EnvSettings) RESTClientGetter() genericclioptions.RESTClientGetter {
+	s.configOnce.Do(func() {
+		clientConfig := kube.GetConfig(s.KubeConfig, s.KubeContext, s.namespace)
+		if s.KubeToken != "" {
+			clientConfig.BearerToken = &s.KubeToken
+		}
+		if s.KubeAPIServer != "" {
+			clientConfig.APIServer = &s.KubeAPIServer
+		}
+		f := true
+		clientConfig.Insecure = &f
+		s.config = clientConfig
+	})
+	return s.config
+}
+```
+
+
 # Helm 2to3 Plugin
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
