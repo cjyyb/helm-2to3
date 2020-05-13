@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/Masterminds/semver v1.5.0 // indirect
-	github.com/cjyyb/helm-plugin-utils v0.0.0-20200512032140-45c7bc7909f2
+	github.com/cjyyb/helm-plugin-utils 0.4.2
 	github.com/golang/protobuf v1.4.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
